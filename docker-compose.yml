@@ -1,0 +1,56 @@
+version: '3'
+volumes: 
+    english_data:
+services:
+  englishapp:
+    image: "english-vocab"
+    ports:
+        - "8082:8081" # webserver_port
+        - "1323:1323"
+    volumes: 
+        - ./src:/app
+    depends_on:
+        - 'posgres_english'
+    links:
+        - 'posgres_english'
+    depends_on:
+        - posgres_english
+  posgres_english: 
+    image: 'postgres:11'
+    restart: always
+    environment:
+        - POSTGRES_PASSWORD=k8kwQ8f4A2fjZk3QhyebekRYKK
+        - POSTGRES_DB=english
+    volumes: 
+        - english_data:/var/lib/postgresql/data
+    ports:
+        - 5432:5432
+    container_name: postgres
+#   mongo_english:
+#     image: 'mongo:latest'
+#     volumes:
+#         - english_data:/data/db
+#     environment:
+#         MONGO_INITDB_ROOT_USERNAME: postgres
+#         MONGO_INITDB_ROOT_PASSWORD: k8kwQ8f4A2fjZk3QhyebekRYKK
+#     container_name: 'mongo_english'
+#     ports:
+#         - '27022:27017'
+  backup-db:
+    image: alpine
+    stdin_open: true
+    tty: true
+    logging:
+        driver: none
+    volumes:
+        - english_data:/var/lib/postgresql/data
+    command: ["tar", "-C", "/var/lib/postgresql/data", "--exclude='logs/*'", "-cjf", "-", "./"]
+    container_name: english_data_backup
+  restore-db:
+    image: alpine
+    stdin_open: true
+    tty: true
+    volumes:
+        - english_data:/var/lib/postgresql/data
+    command: ["tar", "-C", "/var/lib/postgresql/data", "-xj"]
+    container_name: english_data_backup
